@@ -1,15 +1,15 @@
 {
-  "name": "@copilotkit/runtime",
+  "name": "@sutro-dev/copilotkit-runtime",
   "private": false,
-  "homepage": "https://github.com/CopilotKit/CopilotKit",
+  "homepage": "https://github.com/SutroOrg/CopilotKit",
   "repository": {
     "type": "git",
-    "url": "https://github.com/CopilotKit/CopilotKit.git"
+    "url": "https://github.com/SutroOrg/CopilotKit.git"
   },
   "publishConfig": {
     "access": "public"
   },
-  "version": "1.8.13",
+  "version": "1.8.16",
   "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -36,12 +36,12 @@
     "@types/node": "^18.11.17",
     "@whatwg-node/server": "^0.9.34",
     "eslint": "^8.56.0",
-    "eslint-config-custom": "workspace:*",
+    "eslint-config-custom": "@copilotkit/eslint-config-custom",
     "jest": "^29.6.4",
     "nodemon": "^3.1.3",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.2",
-    "tsconfig": "workspace:*",
+    "tsconfig": "@copilotkit/tsconfig",
     "tsup": "^6.7.0",
     "typescript": "^5.2.3",
     "zod-to-json-schema": "^3.23.5"
@@ -52,7 +52,7 @@
     "@ag-ui/encoder": "0.0.28",
     "@ag-ui/proto": "0.0.28",
     "@anthropic-ai/sdk": "^0.27.3",
-    "@copilotkit/shared": "workspace:*",
+    "@copilotkit/shared": "@copilotkit/shared",
     "@graphql-yoga/plugin-defer-stream": "^3.3.1",
     "@langchain/community": "^0.3.29",
     "@langchain/core": "^0.3.38",
