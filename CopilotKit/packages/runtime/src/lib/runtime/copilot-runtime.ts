@@ -678,7 +678,7 @@ please use an LLM adapter instead.`,
             apiUrl: endpoint.deploymentUrl,
             apiKey: endpoint.langsmithApiKey,
             defaultHeaders: { ...propertyHeaders },
-            timeoutMs: 100000,
+            timeoutMs: null,
           });
           let data: Array<{ assistant_id: string; graph_id: string }> | { detail: string } = [];
           try {
@@ -773,7 +773,7 @@ please use an LLM adapter instead.`,
         apiUrl: agentWithEndpoint.endpoint.deploymentUrl,
         apiKey: agentWithEndpoint.endpoint.langsmithApiKey,
         defaultHeaders: { ...propertyHeaders },
-        timeoutMs: 100000,
+        timeoutMs: null,
       });
       let state: any = {};
       try {

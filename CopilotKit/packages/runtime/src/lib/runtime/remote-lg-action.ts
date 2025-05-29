@@ -146,7 +146,7 @@ async function streamEvents(controller: ReadableStreamDefaultController, args: E
     apiUrl: deploymentUrl,
     apiKey: langsmithApiKey,
     defaultHeaders: { ...propertyHeaders },
-    timeoutMs: 100000,
+    timeoutMs: null,
   });
 
   let threadId = argsInitialThreadId ?? randomUUID();
