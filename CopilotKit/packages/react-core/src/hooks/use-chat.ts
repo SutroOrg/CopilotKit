@@ -266,6 +266,9 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
         new TextMessage({
           content: "",
           role: Role.Assistant,
+          status: {
+            code: MessageStatusCode.Pending,
+          },
         }),
       ];
 
@@ -391,6 +394,16 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
             done = readResult.done;
             value = readResult.value;
           } catch (readError) {
+            newMessages = [
+              new TextMessage({
+                content: "",
+                role: Role.Assistant,
+                status: {
+                  code: MessageStatusCode.Failed,
+                  reason: "Connection error",
+                }
+              }),
+            ]
             break;
           }
 
