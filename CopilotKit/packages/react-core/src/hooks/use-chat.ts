@@ -155,6 +155,8 @@ export type UseChatOptions = {
   langGraphInterruptAction: LangGraphInterruptAction | null;
 
   setLangGraphInterruptAction: LangGraphInterruptActionSetter;
+
+  setErrors: React.Dispatch<React.SetStateAction<MessageError[]>>;
 };
 
 export type UseChatHelpers = {
@@ -188,6 +190,11 @@ export interface AppendMessageOptions {
   followUp?: boolean;
 }
 
+export type MessageError = {
+  messageId: Message['id'],
+  error: Error,
+}
+
 export function useChat(options: UseChatOptions): UseChatHelpers {
   const {
     messages,
@@ -214,6 +221,7 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
     setExtensions,
     langGraphInterruptAction,
     setLangGraphInterruptAction,
+    setErrors,
   } = options;
   const runChatCompletionRef = useRef<(previousMessages: Message[]) => Promise<Message[]>>();
   const addErrorToast = useErrorToast();
@@ -394,16 +402,21 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
             done = readResult.done;
             value = readResult.value;
           } catch (readError) {
-            newMessages = [
-              new TextMessage({
-                content: "",
-                role: Role.Assistant,
-                status: {
-                  code: MessageStatusCode.Failed,
-                  reason: "Connection error",
-                }
-              }),
-            ]
+            const failureMessage = new TextMessage({
+              content: "",
+              role: Role.Assistant,
+              status: {
+                __typename: 'FailedMessageStatus',
+                code: MessageStatusCode.Failed,
+                reason: "Could not connect to server",
+              }
+            });
+            if(readError instanceof Error) {
+              setErrors([
+                {error: readError, messageId: failureMessage.id},
+              ]);
+            }
+            newMessages = [failureMessage];
             break;
           }
 

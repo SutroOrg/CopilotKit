@@ -46,7 +46,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import { AgentSession, useCopilotContext } from "../context/copilot-context";
 import { Message, Role, TextMessage } from "@copilotkit/runtime-client-gql";
 import { SystemMessageFunction } from "../types";
-import { useChat, AppendMessageOptions } from "./use-chat";
+import { useChat, AppendMessageOptions, MessageError } from "./use-chat";
 import { defaultCopilotContextCategories } from "../components";
 import { CoAgentStateRenderHandlerArguments } from "@copilotkit/shared";
 import { useCopilotMessagesContext } from "../context";
@@ -82,6 +82,7 @@ export interface MCPServerConfig {
 
 export interface UseCopilotChatReturn {
   visibleMessages: Message[];
+  errors: MessageError[];
   appendMessage: (message: Message, options?: AppendMessageOptions) => Promise<void>;
   setMessages: (messages: Message[]) => void;
   deleteMessage: (messageId: string) => void;
@@ -124,6 +125,7 @@ export function useCopilotChat({
     setLangGraphInterruptAction,
   } = useCopilotContext();
   const { messages, setMessages } = useCopilotMessagesContext();
+  const [errors, setErrors] = useState<MessageError[]>([])
 
   // Simple state for MCP servers (keep for interface compatibility)
   const [mcpServers, setLocalMcpServers] = useState<MCPServerConfig[]>([]);
@@ -215,6 +217,7 @@ export function useCopilotChat({
     setExtensions,
     langGraphInterruptAction,
     setLangGraphInterruptAction,
+    setErrors,
   });
 
   const latestAppend = useUpdatedRef(append);
@@ -287,6 +290,7 @@ export function useCopilotChat({
 
   return {
     visibleMessages: messages,
+    errors,
     appendMessage: latestAppendFunc,
     setMessages: latestSetMessagesFunc,
     reloadMessages: latestReloadFunc,
