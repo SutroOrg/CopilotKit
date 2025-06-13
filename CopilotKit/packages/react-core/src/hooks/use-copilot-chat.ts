@@ -82,11 +82,13 @@ export interface MCPServerConfig {
 
 export interface UseCopilotChatReturn {
   visibleMessages: Message[];
-  errors: MessageError[];
   appendMessage: (message: Message, options?: AppendMessageOptions) => Promise<void>;
   setMessages: (messages: Message[]) => void;
   deleteMessage: (messageId: string) => void;
-  reloadMessages: (messageId: string) => Promise<void>;
+  reloadMessages: (
+    messageId?: string,
+    emitError?: (error: MessageError) => void,
+  ) => Promise<void>;
   stopGeneration: () => void;
   reset: () => void;
   isLoading: boolean;
@@ -125,7 +127,6 @@ export function useCopilotChat({
     setLangGraphInterruptAction,
   } = useCopilotContext();
   const { messages, setMessages } = useCopilotMessagesContext();
-  const [errors, setErrors] = useState<MessageError[]>([])
 
   // Simple state for MCP servers (keep for interface compatibility)
   const [mcpServers, setLocalMcpServers] = useState<MCPServerConfig[]>([]);
@@ -217,7 +218,6 @@ export function useCopilotChat({
     setExtensions,
     langGraphInterruptAction,
     setLangGraphInterruptAction,
-    setErrors,
   });
 
   const latestAppend = useUpdatedRef(append);
@@ -230,8 +230,8 @@ export function useCopilotChat({
 
   const latestReload = useUpdatedRef(reload);
   const latestReloadFunc = useAsyncCallback(
-    async (messageId: string) => {
-      return await latestReload.current(messageId);
+    async (messageId?: string, emitError?: (error: MessageError) => void) => {
+      return await latestReload.current(messageId, emitError);
     },
     [latestReload],
   );
@@ -290,7 +290,6 @@ export function useCopilotChat({
 
   return {
     visibleMessages: messages,
-    errors,
     appendMessage: latestAppendFunc,
     setMessages: latestSetMessagesFunc,
     reloadMessages: latestReloadFunc,

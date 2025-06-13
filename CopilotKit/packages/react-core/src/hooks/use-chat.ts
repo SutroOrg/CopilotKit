@@ -31,6 +31,7 @@ import {
   MetaEventInput,
   AgentStateInput,
 } from "@copilotkit/runtime-client-gql";
+import { CombinedError } from "@urql/core";
 
 import { CopilotApiConfig } from "../context";
 import { FrontendAction, processActionsForRuntimeRequest } from "../types/frontend-action";
@@ -155,8 +156,6 @@ export type UseChatOptions = {
   langGraphInterruptAction: LangGraphInterruptAction | null;
 
   setLangGraphInterruptAction: LangGraphInterruptActionSetter;
-
-  setErrors: React.Dispatch<React.SetStateAction<MessageError[]>>;
 };
 
 export type UseChatHelpers = {
@@ -171,7 +170,10 @@ export type UseChatHelpers = {
    * message isn't from the assistant, it will request the API to generate a
    * new response.
    */
-  reload: (messageId: string) => Promise<void>;
+  reload: (
+    messageId?: string,
+    emitError?: (error: MessageError) => void,
+  ) => Promise<void>;
   /**
    * Abort the current request immediately, keep the generated tokens if any.
    */
@@ -188,11 +190,12 @@ export interface AppendMessageOptions {
    * Whether to run the chat completion after appending the message. Defaults to `true`.
    */
   followUp?: boolean;
+  emitError?: (error: MessageError) => void;
 }
 
 export type MessageError = {
-  messageId: Message['id'],
-  error: Error,
+  messageId?: Message['id'],
+  error: CombinedError,
 }
 
 export function useChat(options: UseChatOptions): UseChatHelpers {
@@ -221,9 +224,14 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
     setExtensions,
     langGraphInterruptAction,
     setLangGraphInterruptAction,
-    setErrors,
   } = options;
-  const runChatCompletionRef = useRef<(previousMessages: Message[]) => Promise<Message[]>>();
+  const runChatCompletionRef = useRef<
+    (
+      previousMessages: Message[],
+      newMessage?: Message,
+      emitError?: (error: MessageError) => void
+    ) => Promise<Message[]>
+  >();
   const addErrorToast = useErrorToast();
   // We need to keep a ref of coagent states and session because of renderAndWait - making sure
   // the latest state is sent to the API
@@ -251,8 +259,16 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
   });
 
   const runChatCompletion = useAsyncCallback(
-    async (previousMessages: Message[]): Promise<Message[]> => {
+    async (
+      originalMessages: Message[],
+      newMessage?: Message | undefined,
+      emitError?: (error:MessageError)=>void
+    ): Promise<Message[]> => {
       setIsLoading(true);
+      const previousMessages = [
+        ...originalMessages,
+        ...(newMessage ? [newMessage]: []),
+      ]
       const interruptEvent = langGraphInterruptAction?.event;
       // In case an interrupt event exist and valid but has no response yet, we cannot process further messages to an agent
       if (
@@ -270,14 +286,15 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
 
       // this message is just a placeholder. It will disappear once the first real message
       // is received
+      const placeholderMessage = new TextMessage({
+        content: "",
+        role: Role.Assistant,
+        status: {
+          code: MessageStatusCode.Pending,
+        },
+      })
       let newMessages: Message[] = [
-        new TextMessage({
-          content: "",
-          role: Role.Assistant,
-          status: {
-            code: MessageStatusCode.Pending,
-          },
-        }),
+        placeholderMessage,
       ];
 
       chatAbortControllerRef.current = new AbortController();
@@ -402,21 +419,11 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
             done = readResult.done;
             value = readResult.value;
           } catch (readError) {
-            const failureMessage = new TextMessage({
-              content: "",
-              role: Role.Assistant,
-              status: {
-                __typename: 'FailedMessageStatus',
-                code: MessageStatusCode.Failed,
-                reason: "Could not connect to server",
-              }
-            });
-            if(readError instanceof Error) {
-              setErrors([
-                {error: readError, messageId: failureMessage.id},
-              ]);
-            }
-            newMessages = [failureMessage];
+            const error = readError as CombinedError;
+            emitError?.(
+              {error, messageId: newMessage?.id},
+            );
+            newMessages = [];
             break;
           }
 
@@ -743,10 +750,10 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
   runChatCompletionRef.current = runChatCompletion;
 
   const runChatCompletionAndHandleFunctionCall = useAsyncCallback(
-    async (messages: Message[]): Promise<void> => {
-      await runChatCompletionRef.current!(messages);
+    async (messages: Message[], newMessage?: Message, emitError?: (error: MessageError) => void): Promise<void> => {
+      await runChatCompletionRef.current!(messages, newMessage, emitError);
     },
-    [messages],
+    [],
   );
 
   // Go over all events and see that they include data that should be returned to the agent
@@ -788,36 +795,39 @@ export function useChat(options: UseChatOptions): UseChatHelpers {
         return;
       }
 
-      const newMessages = [...messages, message];
-      setMessages(newMessages);
+      setMessages([...messages, message]);
       const followUp = options?.followUp ?? true;
       if (followUp) {
-        return runChatCompletionAndHandleFunctionCall(newMessages);
+        return runChatCompletionAndHandleFunctionCall(messages, message, options?.emitError);
       }
     },
     [isLoading, messages, setMessages, runChatCompletionAndHandleFunctionCall],
   );
 
   const reload = useAsyncCallback(
-    async (messageId: string): Promise<void> => {
+    async (messageId?: string, emitError?: (error: MessageError) => void): Promise<void> => {
       if (isLoading || messages.length === 0) {
         return;
       }
 
-      const index = messages.findIndex((msg) => msg.id === messageId);
-      if (index === -1) {
-        console.warn(`Message with id ${messageId} not found`);
-        return;
+      let newMessages: Message[] = messages.slice();
+
+      if (messageId !== undefined) {
+        const index = messages.findIndex((msg) => msg.id === messageId);
+        if (index === -1) {
+          console.warn(`Message with id ${messageId} not found`);
+          return;
+        }
+
+        newMessages = messages.slice(0, index); // excludes the message with messageId
+        if (newMessages.length > 0 && newMessages[newMessages.length - 1].isAgentStateMessage()) {
+          newMessages = newMessages.slice(0, newMessages.length - 1); // remove last one too
+        }
+
+        setMessages(newMessages);
       }
 
-      let newMessages = messages.slice(0, index); // excludes the message with messageId
-      if (newMessages.length > 0 && newMessages[newMessages.length - 1].isAgentStateMessage()) {
-        newMessages = newMessages.slice(0, newMessages.length - 1); // remove last one too
-      }
-
-      setMessages(newMessages);
-
-      return runChatCompletionAndHandleFunctionCall(newMessages);
+      return runChatCompletionAndHandleFunctionCall(newMessages, undefined, emitError);
     },
     [isLoading, messages, setMessages, runChatCompletionAndHandleFunctionCall],
   );
