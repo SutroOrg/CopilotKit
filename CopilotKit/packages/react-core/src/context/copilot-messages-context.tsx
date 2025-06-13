@@ -6,11 +6,13 @@ import { Message } from "@copilotkit/runtime-client-gql";
 import React from "react";
 
 export interface CopilotMessagesContextParams {
+  isInInitialLoad: boolean;
   messages: Message[];
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
 }
 
 const emptyCopilotContext: CopilotMessagesContextParams = {
+  isInInitialLoad: true,
   messages: [],
   setMessages: () => [],
 };

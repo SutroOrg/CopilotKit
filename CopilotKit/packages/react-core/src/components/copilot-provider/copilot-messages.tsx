@@ -9,6 +9,7 @@ import { useCopilotContext } from "../../context/copilot-context";
 
 export function CopilotMessages({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isInInitialLoad, setIsInInitialLoad] = useState<boolean>(true);
   const lastLoadedThreadId = useRef<string>();
   const lastLoadedAgentName = useRef<string>();
   const lastLoadedMessages = useRef<string>();
@@ -26,22 +27,28 @@ export function CopilotMessages({ children }: { children: ReactNode }) {
 
     const fetchMessages = async () => {
       if (!agentSession?.agentName) return;
+      setIsInInitialLoad(true);
 
-      const result = await runtimeClient.loadAgentState({
-        threadId,
-        agentName: agentSession?.agentName,
-      });
+      try {
+        const result = await runtimeClient.loadAgentState({
+          threadId,
+          agentName: agentSession?.agentName,
+        });
 
-      const newMessages = result.data?.loadAgentState?.messages;
-      if (newMessages === lastLoadedMessages.current) return;
+        const newMessages = result.data?.loadAgentState?.messages;
+        if (newMessages === lastLoadedMessages.current) return;
 
-      if (result.data?.loadAgentState?.threadExists) {
-        lastLoadedMessages.current = newMessages;
-        lastLoadedThreadId.current = threadId;
-        lastLoadedAgentName.current = agentSession?.agentName;
+        if (result.data?.loadAgentState?.threadExists) {
+          lastLoadedMessages.current = newMessages;
+          lastLoadedThreadId.current = threadId;
+          lastLoadedAgentName.current = agentSession?.agentName;
 
-        const messages = loadMessagesFromJsonRepresentation(JSON.parse(newMessages || "[]"));
-        setMessages(messages);
+          const messages = loadMessagesFromJsonRepresentation(JSON.parse(newMessages || "[]"));
+          console.log("oh this one?")
+          setMessages(messages);
+        }
+      } finally {
+        setIsInInitialLoad(false);
       }
     };
     void fetchMessages();
@@ -50,6 +57,7 @@ export function CopilotMessages({ children }: { children: ReactNode }) {
   return (
     <CopilotMessagesContext.Provider
       value={{
+        isInInitialLoad,
         messages,
         setMessages,
       }}

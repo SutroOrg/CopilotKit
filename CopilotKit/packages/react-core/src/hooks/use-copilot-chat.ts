@@ -95,6 +95,7 @@ export interface UseCopilotChatReturn {
   runChatCompletion: () => Promise<Message[]>;
   mcpServers: MCPServerConfig[];
   setMcpServers: (mcpServers: MCPServerConfig[]) => void;
+  isInInitialLoad: boolean;
 }
 
 export function useCopilotChat({
@@ -126,7 +127,7 @@ export function useCopilotChat({
     langGraphInterruptAction,
     setLangGraphInterruptAction,
   } = useCopilotContext();
-  const { messages, setMessages } = useCopilotMessagesContext();
+  const { isInInitialLoad, messages, setMessages } = useCopilotMessagesContext();
 
   // Simple state for MCP servers (keep for interface compatibility)
   const [mcpServers, setLocalMcpServers] = useState<MCPServerConfig[]>([]);
@@ -300,6 +301,7 @@ export function useCopilotChat({
     isLoading,
     mcpServers,
     setMcpServers,
+    isInInitialLoad,
   };
 }
 
