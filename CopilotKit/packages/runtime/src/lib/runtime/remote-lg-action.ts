@@ -102,14 +102,14 @@ export async function execute(args: ExecutionArgs): Promise<ReadableStream<Uint8
           throw new CopilotKitMisuseError({
             message: `
               The LangGraph client could not connect to the graph. Please further check previous logs, which includes further details.
-              
+
               See more: https://docs.copilotkit.ai/troubleshooting/common-issues`,
           });
         } else {
           throw new CopilotKitMisuseError({
             message: `
               The LangGraph client threw unhandled error ${err}.
-              
+
               See more: https://docs.copilotkit.ai/troubleshooting/common-issues`,
           });
         }
@@ -234,7 +234,7 @@ async function streamEvents(controller: ReadableStreamDefaultController, args: E
     console.error(`
       No agent found for the agent name specified in CopilotKit provider
       Please check your available agents or provide an agent ID in the LangGraph Platform endpoint definition.\n
-      
+
       These are the available agents: [${assistants.map((a) => `${a.name} (ID: ${a.assistant_id})`).join(", ")}]
       `);
     throw new Error("No agent id found");
@@ -703,6 +703,7 @@ export function langchainMessagesToCopilotKit(messages: any[]): any[] {
         role: "user",
         content: content,
         id: message.id,
+        metadata: message.additional_kwargs?.metadata
       });
     } else if (message.type === "system") {
       result.push({
@@ -718,6 +719,7 @@ export function langchainMessagesToCopilotKit(messages: any[]): any[] {
             name: tool_call.name,
             arguments: tool_call.args,
             parentMessageId: message.id,
+            metadata: message.additional_kwargs?.metadata
           });
         }
       } else {
