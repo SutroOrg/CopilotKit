@@ -556,13 +556,22 @@ export function WrappedCopilotChat({
 
 const SUGGESTIONS_DEBOUNCE_TIMEOUT = 1000;
 
+type UseCopilotChatLogicResults = {
+  visibleMessages: Message[],
+  isLoading: boolean,
+  currentSuggestions: CopilotChatSuggestion[],
+  sendMessage: (messageContent: string, imagesToUse?: Array<{ contentType: string; bytes: string; }>) => Promise<Message>,
+  stopGeneration: () => void,
+  reloadMessages: (messageId: string) => void,
+}
+
 export const useCopilotChatLogic = (
   makeSystemMessage?: SystemMessageFunction,
   onInProgress?: (isLoading: boolean) => void,
   onSubmitMessage?: (messageContent: string) => Promise<void> | void,
   onStopGeneration?: OnStopGeneration,
   onReloadMessages?: OnReloadMessages,
-) => {
+): UseCopilotChatLogicResults => {
   const {
     visibleMessages,
     appendMessage,

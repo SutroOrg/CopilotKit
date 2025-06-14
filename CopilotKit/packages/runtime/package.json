@@ -52,7 +52,7 @@
     "@ag-ui/encoder": "0.0.28",
     "@ag-ui/proto": "0.0.28",
     "@anthropic-ai/sdk": "^0.27.3",
-    "@copilotkit/shared": "@copilotkit/shared",
+    "@copilotkit/shared": "^1.8.13",
     "@graphql-yoga/plugin-defer-stream": "^3.3.1",
     "@langchain/community": "^0.3.29",
     "@langchain/core": "^0.3.38",

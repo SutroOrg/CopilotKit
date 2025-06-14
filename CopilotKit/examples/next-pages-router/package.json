@@ -10,10 +10,10 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist && rm -rf .next"
   },
   "dependencies": {
-    "@copilotkit/react-core": "workspace:*",
+    "@copilotkit/react-core": "@sutro-dev/copilotkit-react-core",
     "@copilotkit/react-textarea": "workspace:*",
     "@copilotkit/react-ui": "workspace:*",
-    "@copilotkit/runtime": "workspace:*",
+    "@copilotkit/runtime": "@sutro-dev/copilotkit-runtime",
     "@copilotkit/shared": "workspace:*",
     "@google/generative-ai": "^0.11.2",
     "@heroicons/react": "^2.0.18",
