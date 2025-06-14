@@ -44,7 +44,6 @@ export function CopilotMessages({ children }: { children: ReactNode }) {
           lastLoadedAgentName.current = agentSession?.agentName;
 
           const messages = loadMessagesFromJsonRepresentation(JSON.parse(newMessages || "[]"));
-          console.log("oh this one?")
           setMessages(messages);
         }
       } finally {
